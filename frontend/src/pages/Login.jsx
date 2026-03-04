@@ -342,53 +342,55 @@ export default function Login() {
 
             {/* Form */}
             <div className="cl-body">
-              <div className="cl-field">
-                <label className="cl-label">Correo electrónico</label>
-                <div className="cl-input-wrap">
-                  <input
-                    className="cl-input"
-                    type="email"
-                    placeholder="usuario@condominio.com"
-                    value={form.email}
-                    onChange={e => setForm({ ...form, email: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="cl-field">
-                <label className="cl-label">Contraseña</label>
-                <div className="cl-input-wrap">
-                  <input
-                    className="cl-input"
-                    type={showPass ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={e => setForm({ ...form, password: e.target.value })}
-                    required
-                  />
-                  <button className="cl-pass-btn" type="button" onClick={() => setShowPass(v => !v)}>
-                    {showPass ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="cl-row">
-                <label className="cl-remember">
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
-                  <span>Recordar sesión</span>
-                </label>
-                <button type="button" className="cl-forgot">¿Olvidaste tu contraseña?</button>
-              </div>
-
-              <button className="cl-submit" disabled={loading} onClick={handleSubmit}>
-                {loading && (
-                  <div className="cl-loading-track">
-                    <div className="cl-loading-fill" />
+              <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
+                <div className="cl-field">
+                  <label className="cl-label">Correo electrónico</label>
+                  <div className="cl-input-wrap">
+                    <input
+                      className="cl-input"
+                      type="email"
+                      placeholder="usuario@condominio.com"
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                      required
+                    />
                   </div>
-                )}
-                {loading ? 'Verificando...' : 'Ingresar al sistema'}
-              </button>
+                </div>
+
+                <div className="cl-field">
+                  <label className="cl-label">Contraseña</label>
+                  <div className="cl-input-wrap">
+                    <input
+                      className="cl-input"
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                      required
+                    />
+                    <button className="cl-pass-btn" type="button" onClick={() => setShowPass(v => !v)}>
+                      {showPass ? '🙈' : '👁'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="cl-row">
+                  <label className="cl-remember">
+                    <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
+                    <span>Recordar sesión</span>
+                  </label>
+                  <button type="button" className="cl-forgot">¿Olvidaste tu contraseña?</button>
+                </div>
+
+                <button type="submit" className="cl-submit" disabled={loading}>
+                  {loading && (
+                    <div className="cl-loading-track">
+                      <div className="cl-loading-fill" />
+                    </div>
+                  )}
+                  {loading ? 'Verificando...' : 'Ingresar al sistema'}
+                </button>
+              </form>
             </div>
 
             {/* Footer */}
