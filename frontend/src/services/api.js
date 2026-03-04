@@ -9,10 +9,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401
+// Handle errors
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // Solo cerrar sesión en 401 (token inválido/expirado)
+    // NO cerrar en 403 (licencia vencida) — el LicenciaGuard maneja eso
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');

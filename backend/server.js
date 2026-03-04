@@ -27,6 +27,8 @@ app.use('/api/condominios',    require('./routes/acuerdos'));
 app.use('/api/condominios',    require('./routes/reservas'));
 app.use('/api',                require('./routes/reservas'));
 app.use('/api/notificaciones', require('./routes/notificaciones'));
+app.use('/api/sistema',        require('./routes/sistema'));
+app.use('/api/licencias',      require('./routes/licencias'));
 
 // ── Residente: su estado de cuenta ────────────────────
 const db = require('./config/database');

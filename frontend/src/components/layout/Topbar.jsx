@@ -1,108 +1,162 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { notiAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Topbar({ title, subtitle }) {
   const { user, condoActual, logout } = useAuth();
   const navigate = useNavigate();
-  const [notis, setNotis] = useState([]);
-  const [showNoti, setShowNoti] = useState(false);
   const [showUser, setShowUser] = useState(false);
-  const notiRef = useRef();
   const userRef = useRef();
 
-  const initials = user ? `${user.nombre[0]}${user.apellido[0]}`.toUpperCase() : '?';
-  const prefix = user?.rol === 'superadmin' ? '/superadmin' : user?.rol === 'admin' ? '/admin' : '/portal';
+  const initials = user ? `${user.nombre?.[0] || ''}${user.apellido?.[0] || ''}`.toUpperCase() : '?';
+  const prefix = user?.rol === 'superadmin' ? '/superadmin'
+    : user?.rol === 'admin' ? '/admin'
+    : '/portal';
 
-  useEffect(() => {
-    if (condoActual?.id) {
-      notiAPI.list(condoActual.id)
-        .then(r => setNotis(r.data.notificaciones || []))
-        .catch(() => {});
-    }
-  }, [condoActual]);
-
-  const sinLeer = notis.filter(n => !n.leida).length;
+  const roleLabel = user?.rol === 'superadmin' ? 'Super Admin'
+    : user?.rol === 'admin' ? 'Administrador'
+    : 'Residente';
 
   const fechaHoy = new Date().toLocaleDateString('es-DO', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setShowUser(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
-    <header className="topbar">
+    <header style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '16px 24px',
+      background: 'var(--surface)',
+      borderBottom: '1px solid var(--border)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+    }}>
+      {/* Left: title */}
       <div>
-        <div className="page-title">{title}</div>
-        {subtitle && <div className="page-subtitle">{subtitle}</div>}
+        <div style={{
+          fontFamily: 'DM Serif Display, serif',
+          fontSize: '22px',
+          fontWeight: '700',
+          color: 'var(--text)',
+          lineHeight: 1.2,
+        }}>{title}</div>
+        {subtitle && (
+          <div style={{ fontSize: '13px', color: 'var(--text2)', marginTop: '2px' }}>
+            {subtitle}
+          </div>
+        )}
       </div>
 
+      {/* Right: date + user menu */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+        {/* Date — hidden on mobile */}
         <span style={{ fontSize: '13px', color: 'var(--text2)' }} className="hide-mobile">
           {fechaHoy}
         </span>
 
-        {/* Notificaciones */}
-        {condoActual && (
-          <div className="dropdown" ref={notiRef}>
-            <button
-              className="btn btn-ghost btn-icon"
-              onClick={() => { setShowNoti(!showNoti); setShowUser(false); }}
-              style={{ position: 'relative' }}
-            >
-              🔔
-              {sinLeer > 0 && (
-                <span style={{
-                  position: 'absolute', top: '2px', right: '2px', width: '8px', height: '8px',
-                  background: 'var(--red)', borderRadius: '50%',
-                }} />
-              )}
-            </button>
+        {/* User dropdown */}
+        <div style={{ position: 'relative' }} ref={userRef}>
+          <div
+            onClick={() => setShowUser(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              cursor: 'pointer', padding: '6px 10px',
+              borderRadius: '10px', border: '1px solid var(--border)',
+              background: showUser ? 'var(--surface2)' : 'var(--surface)',
+              transition: 'background .15s',
+            }}
+          >
+            {/* Avatar */}
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              background: 'var(--accent)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '12px', fontWeight: '700', flexShrink: 0,
+              overflow: 'hidden',
+            }}>
+              {user?.foto_url
+                ? <img src={user.foto_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : initials
+              }
+            </div>
 
-            {showNoti && (
-              <div className="dropdown-menu" style={{ width: '320px', maxHeight: '400px', overflowY: 'auto' }}>
-                <div style={{ padding: '8px 12px', fontSize: '13px', fontWeight: '600', color: 'var(--text2)' }}>
-                  Notificaciones {sinLeer > 0 && <span className="badge badge-red">{sinLeer}</span>}
-                </div>
-                <div className="dropdown-divider" />
-                {notis.length === 0 && (
-                  <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--text2)' }}>
-                    Sin notificaciones
-                  </div>
-                )}
-                {notis.slice(0, 8).map(n => (
-                  <div key={n.id} className="dropdown-item" style={{
-                    opacity: n.leida ? .6 : 1,
-                    borderLeft: n.leida ? 'none' : '2px solid var(--accent)',
-                    paddingLeft: n.leida ? '12px' : '10px',
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: '600', fontSize: '12px', marginBottom: '2px' }}>{n.titulo}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text2)' }}>{n.mensaje}</div>
-                    </div>
-                  </div>
-                ))}
+            {/* Name + role — hidden on small mobile */}
+            <div className="hide-mobile" style={{ lineHeight: 1.3 }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                {user?.nombre} {user?.apellido}
               </div>
-            )}
-          </div>
-        )}
+              <div style={{ fontSize: '11px', color: 'var(--text2)' }}>{roleLabel}</div>
+            </div>
 
-        {/* Avatar / user menu */}
-        <div className="dropdown" ref={userRef}>
-          <div className="avatar" onClick={() => { setShowUser(!showUser); setShowNoti(false); }}>
-            {user?.foto_url ? <img src={user.foto_url} alt="" /> : initials}
+            {/* Chevron */}
+            <span style={{
+              fontSize: '10px', color: 'var(--text2)',
+              transform: showUser ? 'rotate(180deg)' : 'rotate(0)',
+              transition: 'transform .2s',
+            }}>▼</span>
           </div>
+
+          {/* Dropdown menu */}
           {showUser && (
-            <div className="dropdown-menu">
-              <div style={{ padding: '8px 12px 6px', fontSize: '12px', color: 'var(--text2)' }}>
-                {user?.email}
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: '12px', minWidth: '220px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              overflow: 'hidden', zIndex: 200,
+            }}>
+              {/* User info header */}
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>
+                  {user?.nombre} {user?.apellido}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>
+                  {user?.email}
+                </div>
               </div>
-              <div className="dropdown-divider" />
-              <div className="dropdown-item" onClick={() => { navigate(`${prefix}/perfil`); setShowUser(false); }}>
-                ⚙ Editar perfil
+
+              {/* Edit profile */}
+              <div
+                onClick={() => { navigate(`${prefix}/perfil`); setShowUser(false); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '11px 16px', cursor: 'pointer', fontSize: '14px',
+                  color: 'var(--text)', transition: 'background .15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span>⚙️</span> Editar perfil
               </div>
-              <div className="dropdown-divider" />
-              <div className="dropdown-item danger" onClick={() => { logout(); navigate('/login'); }}>
-                ↩ Cerrar sesión
+
+              <div style={{ height: '1px', background: 'var(--border)' }} />
+
+              {/* Logout */}
+              <div
+                onClick={() => { logout(); navigate('/login'); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '11px 16px', cursor: 'pointer', fontSize: '14px',
+                  color: 'var(--red)', transition: 'background .15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.05)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span>↩</span> Cerrar sesión
               </div>
             </div>
           )}

@@ -33,30 +33,44 @@ const upload = multer({
   }
 });
 
-// GET solicitudes
+// GET solicitudes — FIXED: query builder limpio sin bugs de parámetros
 router.get('/:condominioId/solicitudes', auth, async (req, res) => {
   try {
     const isResidente = req.user.rol === 'residente';
     const { estado } = req.query;
-    let q = `SELECT s.*,
-      u.nombre || ' ' || u.apellido AS residente_nombre,
-      un.numero AS unidad_numero
+
+    const conditions = ['s.condominio_id = $1'];
+    const params = [req.params.condominioId];
+
+    if (isResidente) {
+      params.push(req.user.id);
+      conditions.push(`s.usuario_id = $${params.length}`);
+    } else if (estado) {
+      params.push(estado);
+      conditions.push(`s.estado = $${params.length}`);
+    }
+
+    const q = `
+      SELECT s.*,
+        u.nombre || ' ' || u.apellido AS residente_nombre,
+        un.numero AS unidad_numero
       FROM solicitudes s
       LEFT JOIN usuarios u ON u.id = s.usuario_id
       LEFT JOIN unidad_residentes ur ON ur.usuario_id = s.usuario_id AND ur.activo = true
       LEFT JOIN unidades un ON un.id = ur.unidad_id
-      WHERE s.condominio_id = $1
-      ${isResidente ? 'AND s.usuario_id = $2' : estado ? 'AND s.estado = $2' : ''}
-      ORDER BY s.created_at DESC`;
-    const params = isResidente
-      ? [req.params.condominioId, req.user.id]
-      : estado ? [req.params.condominioId, estado] : [req.params.condominioId];
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY s.created_at DESC
+    `;
+
     const { rows } = await db.query(q, params);
     res.json(rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('Error GET solicitudes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// POST crear solicitud — usa columnas reales: titulo, descripcion
+// POST crear solicitud
 router.post('/:condominioId/solicitudes', auth, upload.single('archivo'), async (req, res) => {
   try {
     const { asunto, descripcion, tipo } = req.body;
@@ -75,7 +89,7 @@ router.post('/:condominioId/solicitudes', auth, upload.single('archivo'), async 
   }
 });
 
-// PUT admin responde — usa columna real: respuesta
+// PUT admin responde
 router.put('/:condominioId/solicitudes/:id', auth, requireRole('superadmin','admin'), async (req, res) => {
   try {
     const { estado, respuesta_admin } = req.body;

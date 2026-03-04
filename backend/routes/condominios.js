@@ -123,7 +123,7 @@ router.get('/:condominioId/dashboard', auth, async (req, res) => {
     const [pagos, gastos_mes, morosos, empleados] = await Promise.all([
       db.query(
         `SELECT COALESCE(SUM(monto_pagado),0) AS cobrado,
-                COUNT(*) FILTER(WHERE estado='pagado') AS pagados
+                COUNT(*) FILTER(WHERE estado IN ('pagado','parcial')) AS pagados
          FROM pagos_cuota pc
          JOIN periodos_cuota p ON p.id = pc.periodo_id
          WHERE p.id = $1`,

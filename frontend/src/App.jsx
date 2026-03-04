@@ -8,6 +8,7 @@ import Profile from './pages/Profile';
 import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import SACondominios from './pages/superadmin/Condominios';
 import SAUsuarios from './pages/superadmin/Usuarios';
+import Licencias from './pages/superadmin/Licencias';
 
 import AdminDashboard from './pages/admin/Dashboard';
 import Residentes from './pages/admin/Residentes';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/superadmin" element={<ProtectedRoute roles={['superadmin']}><SuperAdminDashboard /></ProtectedRoute>} />
           <Route path="/superadmin/condominios" element={<ProtectedRoute roles={['superadmin']}><SACondominios /></ProtectedRoute>} />
           <Route path="/superadmin/usuarios" element={<ProtectedRoute roles={['superadmin']}><SAUsuarios /></ProtectedRoute>} />
+          <Route path="/superadmin/licencias" element={<ProtectedRoute roles={['superadmin']}><Licencias /></ProtectedRoute>} />
           <Route path="/superadmin/perfil" element={<ProtectedRoute roles={['superadmin']}><Profile /></ProtectedRoute>} />
 
           {/* Admin */}

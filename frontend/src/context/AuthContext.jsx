@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,        setUser]        = useState(null);
   const [condominios, setCondominios] = useState([]);
-  const [condoActual, setCondoActual] = useState(null); // condominio seleccionado
-  const [residencia,  setResidencia]  = useState(null); // para residente
+  const [condoActual, setCondoActual] = useState(null);
+  const [residencia,  setResidencia]  = useState(null);
   const [loading,     setLoading]     = useState(true);
 
   // Recargar sesión al iniciar
@@ -15,24 +15,36 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem('user');
     const token  = localStorage.getItem('token');
     if (stored && token) {
-      const u = JSON.parse(stored);
-      setUser(u);
-      const condos = JSON.parse(localStorage.getItem('condominios') || '[]');
-      setCondominios(condos);
-      const cActual = JSON.parse(localStorage.getItem('condoActual') || 'null');
-      setCondoActual(cActual || condos[0] || null);
-      const res = JSON.parse(localStorage.getItem('residencia') || 'null');
-      setResidencia(res);
+      try {
+        const u = JSON.parse(stored);
+        setUser(u);
+        const condos  = JSON.parse(localStorage.getItem('condominios') || '[]');
+        const cActual = JSON.parse(localStorage.getItem('condoActual') || 'null');
+        const res     = JSON.parse(localStorage.getItem('residencia')  || 'null');
+        setCondominios(condos);
+        setCondoActual(cActual || condos[0] || null);
+        setResidencia(res);
+
+        // Revalidar token con el servidor en segundo plano
+        api.get('/auth/me').then(r => {
+          setUser(r.data);
+          localStorage.setItem('user', JSON.stringify(r.data));
+        }).catch(() => {
+          // Solo limpiar si es 401 (token inválido), no por licencia vencida
+        });
+      } catch {
+        localStorage.clear();
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await authAPI.login({ email, password });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    const { data } = await api.post('/auth/login', { email, password });
+    localStorage.setItem('token',       data.token);
+    localStorage.setItem('user',        JSON.stringify(data.user));
     localStorage.setItem('condominios', JSON.stringify(data.condominios || []));
-    localStorage.setItem('residencia', JSON.stringify(data.residencia || null));
+    localStorage.setItem('residencia',  JSON.stringify(data.residencia || null));
     setUser(data.user);
     setCondominios(data.condominios || []);
     setResidencia(data.residencia || null);

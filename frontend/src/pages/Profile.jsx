@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Layout from '../components/layout/Layout';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,26 @@ export default function Profile() {
   const [pwForm, setPwForm] = useState({ actual:'', nueva:'', confirmar:'' });
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingPw, setLoadingPw] = useState(false);
+
+  // Sistema config (solo superadmin)
+  const [sysConfig, setSysConfig] = useState({ nombre_sistema:'CondoAdmin', subtitulo:'PRO', logo_url:null });
+  const [sysForm, setSysForm] = useState({ nombre_sistema:'CondoAdmin', subtitulo:'PRO' });
+  const [loadingSys, setLoadingSys] = useState(false);
+  const [loadingLogo, setLoadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const logoInputRef = useRef();
+
+  const isSuperAdmin = user?.rol === 'superadmin';
+
+  // Cargar config del sistema
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    api.get('/sistema/config').then(r => {
+      setSysConfig(r.data);
+      setSysForm({ nombre_sistema: r.data.nombre_sistema || 'CondoAdmin', subtitulo: r.data.subtitulo || 'PRO' });
+      setLogoPreview(r.data.logo_url || null);
+    }).catch(() => {});
+  }, [isSuperAdmin]);
 
   const saveProfile = async (e) => {
     e.preventDefault();
@@ -32,6 +52,53 @@ export default function Profile() {
     } catch (err) { toast.error(err.response?.data?.error || 'Error'); } finally { setLoadingPw(false); }
   };
 
+  const saveSysConfig = async (e) => {
+    e.preventDefault();
+    if (!sysForm.nombre_sistema.trim()) return toast.error('El nombre del sistema es requerido');
+    setLoadingSys(true);
+    try {
+      const { data } = await api.put('/sistema/config', sysForm);
+      setSysConfig(data);
+      toast.success('Configuración del sistema actualizada');
+    } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar'); }
+    finally { setLoadingSys(false); }
+  };
+
+  const handleLogoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Preview local inmediato
+    const reader = new FileReader();
+    reader.onload = ev => setLogoPreview(ev.target.result);
+    reader.readAsDataURL(file);
+    // Subir al servidor
+    setLoadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('logo', file);
+      const { data } = await api.post('/sistema/logo', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSysConfig(data);
+      setLogoPreview(data.logo_url);
+      toast.success('Logo actualizado correctamente');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al subir logo');
+      setLogoPreview(sysConfig.logo_url);
+    } finally { setLoadingLogo(false); }
+  };
+
+  const handleQuitarLogo = async () => {
+    setLoadingLogo(true);
+    try {
+      await api.delete('/sistema/logo');
+      setSysConfig(p => ({ ...p, logo_url: null }));
+      setLogoPreview(null);
+      toast.success('Logo eliminado');
+    } catch { toast.error('Error al eliminar logo'); }
+    finally { setLoadingLogo(false); }
+  };
+
   return (
     <Layout>
       <div style={{ padding:'32px', maxWidth:'640px' }}>
@@ -49,7 +116,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Edit profile */}
+        {/* Información personal */}
         <div className="card" style={{ padding:'24px', marginBottom:'24px' }}>
           <h3 style={{ fontSize:'16px', fontWeight:'700', marginBottom:'20px' }}>Información Personal</h3>
           <form onSubmit={saveProfile} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
@@ -71,8 +138,8 @@ export default function Profile() {
           </form>
         </div>
 
-        {/* Change password */}
-        <div className="card" style={{ padding:'24px' }}>
+        {/* Cambiar contraseña */}
+        <div className="card" style={{ padding:'24px', marginBottom:'24px' }}>
           <h3 style={{ fontSize:'16px', fontWeight:'700', marginBottom:'20px' }}>Cambiar Contraseña</h3>
           <form onSubmit={savePw} style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
             {[{ label:'Contraseña actual', key:'actual' }, { label:'Nueva contraseña', key:'nueva' }, { label:'Confirmar nueva contraseña', key:'confirmar' }].map(f => (
@@ -88,6 +155,140 @@ export default function Profile() {
             </div>
           </form>
         </div>
+
+        {/* ── Configuración del sistema (solo superadmin) ── */}
+        {isSuperAdmin && (
+          <div className="card" style={{ padding:'24px', marginBottom:'24px', border:'1px solid rgba(176,138,78,0.3)', position:'relative', overflow:'hidden' }}>
+            <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:'var(--accent)' }} />
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
+              <span style={{ fontSize:'20px' }}>⚙️</span>
+              <div>
+                <h3 style={{ fontSize:'16px', fontWeight:'700', margin:0 }}>Configuración del Sistema</h3>
+                <p style={{ fontSize:'12px', color:'var(--text2)', margin:0, marginTop:'2px' }}>Personaliza el nombre y logo del sistema</p>
+              </div>
+              <span className="badge badge-gold" style={{ marginLeft:'auto' }}>Super Admin</span>
+            </div>
+
+            {/* Logo */}
+            <div style={{ marginBottom:'24px' }}>
+              <label style={{ fontSize:'11px', fontWeight:'600', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:'12px' }}>Logo del sistema</label>
+              <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+                {/* Preview */}
+                <div
+                  onClick={() => !loadingLogo && logoInputRef.current?.click()}
+                  style={{
+                    width:'80px', height:'80px', borderRadius:'14px',
+                    border:'2px dashed var(--border)', background:'var(--surface2)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    cursor:'pointer', overflow:'hidden', flexShrink:0,
+                    transition:'border-color .2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                >
+                  {loadingLogo ? (
+                    <span style={{ fontSize:'20px' }}>⏳</span>
+                  ) : logoPreview ? (
+                    <img src={logoPreview} alt="Logo" style={{ width:'100%', height:'100%', objectFit:'contain', padding:'6px' }} />
+                  ) : (
+                    <div style={{ textAlign:'center' }}>
+                      <div style={{ fontSize:'24px' }}>🏢</div>
+                      <div style={{ fontSize:'10px', color:'var(--text2)', marginTop:'2px' }}>Subir</div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ flex:1 }}>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display:'none' }}
+                    onChange={handleLogoChange}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={loadingLogo}
+                    style={{ marginBottom:'8px', display:'block' }}
+                  >
+                    {loadingLogo ? 'Subiendo...' : logoPreview ? '🔄 Cambiar logo' : '📁 Subir logo'}
+                  </button>
+                  {logoPreview && (
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={handleQuitarLogo}
+                      disabled={loadingLogo}
+                      style={{ fontSize:'12px' }}
+                    >
+                      🗑 Quitar logo
+                    </button>
+                  )}
+                  <p style={{ fontSize:'11px', color:'var(--text2)', marginTop:'8px', margin:'8px 0 0' }}>
+                    PNG, JPG, SVG o WebP · Máximo 2MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Nombre y subtítulo */}
+            <form onSubmit={saveSysConfig} style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+              <div>
+                <label style={{ fontSize:'11px', fontWeight:'600', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:'6px' }}>
+                  Nombre del sistema
+                </label>
+                <input
+                  className="input"
+                  value={sysForm.nombre_sistema}
+                  onChange={e => setSysForm(p => ({ ...p, nombre_sistema: e.target.value }))}
+                  placeholder="CondoAdmin"
+                  required
+                />
+                <p style={{ fontSize:'11px', color:'var(--text2)', marginTop:'4px' }}>
+                  Este nombre aparece en el sidebar y en el login.
+                </p>
+              </div>
+              <div>
+                <label style={{ fontSize:'11px', fontWeight:'600', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:'6px' }}>
+                  Subtítulo / Tagline
+                </label>
+                <input
+                  className="input"
+                  value={sysForm.subtitulo}
+                  onChange={e => setSysForm(p => ({ ...p, subtitulo: e.target.value }))}
+                  placeholder="PRO"
+                />
+                <p style={{ fontSize:'11px', color:'var(--text2)', marginTop:'4px' }}>
+                  Aparece debajo del nombre (ej: PRO, v2.0, Tu empresa).
+                </p>
+              </div>
+
+              {/* Preview en vivo */}
+              <div style={{ padding:'16px', background:'#1a1d2e', borderRadius:'10px', display:'flex', alignItems:'center', gap:'12px' }}>
+                <div style={{ fontSize:'11px', color:'#8b90a4', textTransform:'uppercase', letterSpacing:'1px', marginRight:'4px' }}>Preview:</div>
+                {logoPreview && (
+                  <img src={logoPreview} alt="logo" style={{ width:'28px', height:'28px', objectFit:'contain', borderRadius:'6px' }} />
+                )}
+                <div>
+                  <div style={{ fontFamily:'DM Serif Display, serif', fontSize:'18px', color:'#c9a96e' }}>
+                    {sysForm.nombre_sistema || 'CondoAdmin'}
+                  </div>
+                  <div style={{ fontSize:'9px', color:'#8b90a4', textTransform:'uppercase', letterSpacing:'2px' }}>
+                    {sysForm.subtitulo || 'PRO'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                <button type="submit" className="btn btn-primary" disabled={loadingSys}>
+                  {loadingSys ? 'Guardando...' : '💾 Guardar configuración'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </Layout>
   );

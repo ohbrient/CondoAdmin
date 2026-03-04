@@ -25,9 +25,11 @@ const residentesRoutes  = require('./routes/residentes');
 const cuotasRoutes      = require('./routes/cuotas');
 const gastosRoutes      = require('./routes/gastos-empleados');
 const reportesRoutes    = require('./routes/reportes');
+const sistemaRoutes     = require('./routes/sistema');
 
 app.use('/api/auth',        authRoutes);
 app.use('/api/condominios', condominiosRoutes);
+app.use('/api/sistema',     sistemaRoutes);
 
 // Rutas anidadas por condominio
 app.use('/api/condominios/:condominioId', residentesRoutes);
