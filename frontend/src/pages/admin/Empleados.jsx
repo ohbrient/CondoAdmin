@@ -3,6 +3,8 @@ import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const cargos = ['vigilante','conserje','jardinero','mantenimiento','administrador','recepcionista','otro'];
 const EMPTY = {
   // Personal
@@ -60,7 +62,7 @@ export default function Empleados() {
       bonificacion: emp.bonificacion||'', vacaciones_dias: emp.vacaciones_dias||'30',
       dias_vacaciones_tomados: emp.dias_vacaciones_tomados||'0',
     });
-    setEditando(emp); setFotoFile(null); setFotoPreview(emp.foto_url ? `http://localhost:4000${emp.foto_url}` : null);
+    setEditando(emp); setFotoFile(null); setFotoPreview(emp.foto_url ? `${API_URL}${emp.foto_url}` : null);
     setTabModal('personal'); setModal('empleado');
   };
 

@@ -25,11 +25,11 @@ export default function Login() {
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
-      <div style={{ position:'fixed', top:'-200px', right:'-200px', width:'600px', height:'600px', borderRadius:'50%', background:'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)', pointerEvents:'none' }} />
+      <div style={{ position:'fixed', top:'-200px', right:'-200px', width:'600px', height:'600px', borderRadius:'50%', background:'radial-gradient(circle, rgba(201,169,110,0.06) s0%, transparent 70%)', pointerEvents:'none' }} />
       <div style={{ width:'100%', maxWidth:'420px' }}>
         <div style={{ textAlign:'center', marginBottom:'40px' }}>
           <div style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:'60px', height:'60px', borderRadius:'16px', background:'rgba(201,169,110,0.15)', border:'1px solid rgba(201,169,110,0.3)', marginBottom:'20px', fontSize:'28px' }}>🏢</div>
-          <h1 style={{ fontFamily:'DM Serif Display, serif', fontSize:'32px', color:'var(--accent)', margin:0 }}>CondoAdmin</h1>
+          <h1 style={{ fontFamily:'DM Serif Display, serif', fontSize:'32px', color:'var(--accent)', margin:0 }}>CondoAdmin v2</h1>
           <p style={{ color:'var(--text2)', fontSize:'14px', marginTop:'6px' }}>Sistema de Administración de Condominios</p>
         </div>
         <div className="card" style={{ padding:'32px' }}>
@@ -48,7 +48,10 @@ export default function Login() {
               {loading ? 'Ingresando...' : 'Ingresar →'}
             </button>
           </form>
-
+          <div style={{ marginTop:'20px', padding:'16px', background:'var(--surface2)', borderRadius:'8px', fontSize:'12px', color:'var(--text2)' }}>
+            <strong style={{ color:'var(--text)' }}>Demo Super Admin:</strong><br />
+            superadmin@condoadmin.com / Admin123!
+          </div>
         </div>
         <p style={{ textAlign:'center', fontSize:'12px', color:'var(--text2)', marginTop:'24px' }}>CondoAdmin PRO © {new Date().getFullYear()}</p>
       </div>

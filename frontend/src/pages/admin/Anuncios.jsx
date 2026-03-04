@@ -3,6 +3,8 @@ import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const TIPOS = ['general','mantenimiento','evento','urgente','financiero'];
 const TIPO_COLOR = { general:'badge-blue', mantenimiento:'badge-yellow', evento:'badge-green', urgente:'badge-red', financiero:'badge-gold' };
 const TIPO_ICON  = { general:'📢', mantenimiento:'🔧', evento:'🎉', urgente:'🚨', financiero:'💰' };
@@ -132,7 +134,7 @@ export default function Anuncios() {
 
                     {/* Documento adjunto */}
                     {a.documento_url && (
-                      <a href={`http://localhost:4000${a.documento_url}`} target="_blank" rel="noreferrer"
+                      <a href={`${API_URL}${a.documento_url}`} target="_blank" rel="noreferrer"
                         style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'7px 14px', borderRadius:'8px', background:'var(--surface2)', border:'1px solid var(--border)', textDecoration:'none', color:'var(--text)', fontSize:'13px', fontWeight:'600', transition:'all .15s' }}
                         onMouseEnter={e => e.currentTarget.style.borderColor='var(--accent)'}
                         onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}>
