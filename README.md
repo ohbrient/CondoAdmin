@@ -56,10 +56,6 @@ npm run dev
 # App disponible en http://localhost:5173
 ```
 
-## Credenciales iniciales
-- **Super Admin:** superadmin@condoadmin.com / Admin123!
-- Cambia la contraseña después del primer login
-
 ## API Endpoints principales
 
 ### Autenticación
